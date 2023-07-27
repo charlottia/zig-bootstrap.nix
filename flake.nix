@@ -1,44 +1,50 @@
 {
-  description = "Zig";
-
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-23.05";
-    flake-utils.url = "github:numtide/flake-utils";
-  };
+  description = "Zig via bootstrapped LLVM";
 
   outputs = {
     self,
     nixpkgs,
     flake-utils,
   }: let
-    systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
-    outputs = flake-utils.lib.eachSystem systems (system: let
+    systemTriples = {
+      "x86_64-linux" = "x86_64-linux-gnu";
+      "x86_64-darwin" = "x86_64-macos-none";
+      "aarch64-linux" = "aarch64-linux-gnu";
+      "aarch64-darwin" = "aarch64-macos-none";
+    };
+
+    outputs = flake-utils.lib.eachSystem (builtins.attrNames systemTriples) (system: let
       pkgs = nixpkgs.legacyPackages.${system};
+      triple = systemTriples.${system};
+      cpu = "baseline";
       lib = pkgs.lib;
     in rec {
       packages = {
-        default = pkgs.stdenv.mkDerivation rec {
+        default = pkgs.stdenv.mkDerivation {
           pname = "zig";
-          version = "0.11.0.dev1+g${lib.substring 0 7 src.rev}";
-          src = pkgs.fetchFromGitHub {
-            owner = "ziglang";
-            repo = "zig";
-            rev = "1aacfa7186187ed467a5e3189a877493d5c620a1";
-            sha256 = "rhFKbY2XeFb5ErLAC0XBzQLQsIxelb0Ydgwse1THF30=";
-          };
+          version = "0.11.0-dev.4183+32a175740";
+
+          src = ./src;
 
           nativeBuildInputs = with pkgs; [
             cmake
-            clang_16
-            llvmPackages_16.clang-unwrapped
-            lld_16
-            llvmPackages_16.libllvm
-            mold
+            ninja
+            python311
+            git
           ];
 
-          buildInputs = with pkgs; [
-            libxml2
-          ];
+          dontUseCmakeConfigure = true;
+
+          CMAKE_GENERATOR = "Ninja";
+
+          buildPhase = ''
+            ./build-1 ${triple} ${cpu}
+          '';
+
+          installPhase = ''
+            cp -r out/host $out
+          '';
+            #cp -r out/zig-${triple}-${cpu} $out
         };
       };
       formatter = pkgs.alejandra;
