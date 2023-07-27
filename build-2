@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# <<< build-1 >>>
+
+# Now we build Zig, still with system C/C++ compiler, linking against LLVM,
+# Clang, LLD we just built from source.
+mkdir -p "$ROOTDIR/out/build-zig-host"
+cd "$ROOTDIR/out/build-zig-host"
+cmake "$ROOTDIR/zig" \
+  -DCMAKE_INSTALL_PREFIX="$ROOTDIR/out/host" \
+  -DCMAKE_PREFIX_PATH="$ROOTDIR/out/host" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DZIG_VERSION="$ZIG_VERSION"
+cmake --build . --target install

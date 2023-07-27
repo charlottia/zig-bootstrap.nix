@@ -13,41 +13,29 @@
       "aarch64-darwin" = "aarch64-macos-none";
     };
 
+    zbVersion = "8efff94f39e147b54ee2d5bce939b998f02d4f76";
+    zigVersion = "0.11.0-dev.4183+32a175740";
+
     outputs = flake-utils.lib.eachSystem (builtins.attrNames systemTriples) (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       triple = systemTriples.${system};
       cpu = "baseline";
-      lib = pkgs.lib;
-    in rec {
+      stages = import ./stages.nix {inherit pkgs zbVersion zigVersion triple cpu;};
+    in {
+      formatter = pkgs.alejandra;
+
       packages = {
         default = pkgs.stdenv.mkDerivation {
           pname = "zig";
-          version = "0.11.0-dev.4183+32a175740";
+          version = zigVersion;
 
-          src = ./src;
+          dontUnpack = true;
 
-          nativeBuildInputs = with pkgs; [
-            cmake
-            ninja
-            python311
-            git
+          nativeBuildInputs = [
+            stages.stage-1
           ];
-
-          dontUseCmakeConfigure = true;
-
-          CMAKE_GENERATOR = "Ninja";
-
-          buildPhase = ''
-            ./build-1 ${triple} ${cpu}
-          '';
-
-          installPhase = ''
-            cp -r out/host $out
-          '';
-            #cp -r out/zig-${triple}-${cpu} $out
         };
       };
-      formatter = pkgs.alejandra;
     });
   in
     outputs;
