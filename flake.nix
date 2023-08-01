@@ -32,7 +32,7 @@
           dontUnpack = true;
 
           nativeBuildInputs = [
-            stages.stage-1
+            stages.stage-2
           ];
         };
       };

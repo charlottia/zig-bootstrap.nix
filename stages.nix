@@ -24,10 +24,12 @@
       CMAKE_GENERATOR = "Ninja";
 
       buildPhase = ''
+        mkdir out
         TARGET="${triple}"
         MCPU="${cpu}"
         ${builtins.readFile ./build-common}
         ${finalAttrs.stageBuild}
+        cd "$ROOTDIR"
       '';
 
       stageBuild = null;
@@ -37,7 +39,8 @@ in rec {
     stageBuild = builtins.readFile ./build-1;
 
     installPhase = ''
-      cp -r src/out/host $out
+      mkdir -p $out
+      cp -a out/host $out
     '';
   };
 
@@ -45,9 +48,16 @@ in rec {
     nativeBuildInputs = previousAttrs.nativeBuildInputs ++
     [stage-1];
 
-    stageBuild = builtins.readFile ./build-2;
+    CMAKE_GENERATOR = "Unix Makefile";
+
+    stageBuild = ''
+      cp -a ${stage-1}/host out
+      chmod -R u+w out
+      ${builtins.readFile ./build-2}
+    '';
 
     installPhase = ''
+      mkdir -p $out
       cp -r out/host $out
     '';
   });
